@@ -100,7 +100,7 @@ zip -r $backup_zip $VOLTIMAX_PATH || log_message "❌ Failed to create a backup 
 for dir in "${selected_directories[@]}"
 do
     log_message "✨ Beaming up $dir..."
-    copied_files=$((copied_files + $(rsync -avn $BATTRON_THEME_PATH/src/$dir/ $VOLTIMAX_PATH/src/$dir/ | wc -l)))
+    copied_files=$((copied_files + $(rsync -av $BATTRON_THEME_PATH/src/$dir/ $VOLTIMAX_PATH/src/$dir/ | wc -l)))
     rsync -av $BATTRON_THEME_PATH/src/$dir/ $VOLTIMAX_PATH/src/$dir/ || log_message "❌ Failed to sync $dir"
 done
 
