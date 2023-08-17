@@ -19,7 +19,7 @@ log_message() {
 }
 
 # Selective Syncing
-sselected_directories=()
+selected_directories=()
 
 echo "Which directories would you like to sync?"
 echo "(Enter directory numbers separated by spaces for multiple selections, 'a' for all, or 'q' to quit.)"
