@@ -6,7 +6,9 @@ source config.txt
 # Function to send a Slack notification
 send_slack_notification() {
     local message="$1"
-    curl -s -X POST -H 'Content-type: application/json' --data "{\"text\":\"$message\"}" $webhook_url
+    # Escape special characters in message to avoid breaking JSON
+    message=$(echo "$message" | sed 's/"/\\"/g')
+    curl -s -X POST -H 'Content-type: application/json' --data "{\"text\":\"$message\"}" "$webhook_url"
 }
 
 # Directories to be potentially synced
@@ -15,7 +17,7 @@ declare -a directories=("Resources/app/storefront/src/scss" "Resources/public" "
 log_file="sync_log_$(date '+%Y%m%d').log"
 
 log_message() {
-    echo "🚀 $1" | tee -a $log_file
+    echo "🚀 $1" | tee -a "$log_file"
 }
 
 # Selective Syncing
@@ -61,7 +63,7 @@ select dir in "${extended_directories[@]}"; do
     fi
 done
 
-# Just for verification, print out the selected directories.
+# Verification, print out the selected directories.
 echo "You've selected the following directories:"
 for dir in "${selected_directories[@]}"; do
     echo " - $dir"
@@ -71,7 +73,7 @@ done
 copied_files=0
 
 # Check current branch
-cd $VOLTIMAX_PATH
+cd "$VOLTIMAX_PATH"
 current_branch=$(git rev-parse --abbrev-ref HEAD)
 if [ "$current_branch" != "master" ]; then
     log_message "⚠️  You are not on the master branch. Current branch: $current_branch"
@@ -94,14 +96,24 @@ fi
 # Backup
 backup_zip="$VOLTIMAX_PATH/backup_$(date '+%Y%m%d%H%M%S').zip"
 log_message "🛸 Creating a backup ZIP of Voltimax..."
-zip -r $backup_zip $VOLTIMAX_PATH || log_message "❌ Failed to create a backup ZIP"
+
+# Only backup the directories being synced
+zip -r $backup_zip "${selected_directories[@]/#/$VOLTIMAX_PATH/}" || log_message "❌ Failed to create a backup ZIP"
 
 # Loop through each directory to sync
 for dir in "${selected_directories[@]}"
 do
     log_message "✨ Beaming up $dir..."
-    copied_files=$((copied_files + $(rsync -av $BATTRON_THEME_PATH/src/$dir/ $VOLTIMAX_PATH/src/$dir/ | wc -l)))
-    rsync -av $BATTRON_THEME_PATH/src/$dir/ $VOLTIMAX_PATH/src/$dir/ || log_message "❌ Failed to sync $dir"
+    # Only use rsync once
+    rsync_output=$(rsync -av "$BATTRON_THEME_PATH/src/$dir/" "$VOLTIMAX_PATH/src/$dir/")
+    rsync_status=$?
+
+    copied_files_count=$(echo "$rsync_output" | wc -l)
+    copied_files=$((copied_files + copied_files_count))
+
+    if [[ $rsync_status -ne 0 ]]; then
+        log_message "❌ Failed to sync $dir"
+    fi
 done
 
 log_message "🎉 Woo-hoo! The files have landed safely on the other side!"
@@ -112,6 +124,11 @@ git add src/Resources
 git commit -m "$commit_message"
 
 read -p "Which branch would you like to push to? " branch
+# Check if branch exists
+if ! git show-ref --verify --quiet refs/heads/"$branch"; then
+    log_message "⚠️  Branch $branch does not exist. Creating and switching to it..."
+    git checkout -b "$branch"
+fi
 git push origin "$branch"
 
 log_message "📚 The library's been updated! (I mean the git repository)"
@@ -121,8 +138,10 @@ log_message "🥳 Mission accomplished! Your files are chilling at their new hom
 echo "Summary:"
 echo "Copied files: $copied_files"
 
-# Notification
-osascript -e 'display notification "Syncing Complete" with title "Sync Script"'
+# Notification (Mac-specific)
+if [[ "$OSTYPE" == "darwin"* ]]; then
+    osascript -e 'display notification "Syncing Complete" with title "Sync Script"'
+fi
 
 # Send fun Slack notifications
 send_slack_notification "🚀 Mission accomplished! Your files have been teleported successfully!"
