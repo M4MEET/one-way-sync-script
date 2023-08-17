@@ -13,11 +13,11 @@ send_slack_notification() {
 
 # Directories to be potentially synced
 declare -a directories=(
-  "src/Resources/app/storefront/src/scss/base.scss"
-  "src/Resources/app/storefront/src/scss/overrides.scss"
-  "src/Resources/public"
-  "src/Resources/snippet"
-  "src/Resources/views/storefront"
+  "Resources/app/storefront/src/scss/base.scss"
+  "Resources/app/storefront/src/scss/overrides.scss"
+  "Resources/public"
+  "Resources/snippet"
+  "Resources/views/storefront"
   )
 
 log_file="sync_log_$(date '+%Y%m%d').log"
