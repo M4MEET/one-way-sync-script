@@ -10,7 +10,7 @@ send_slack_notification() {
 }
 
 # Directories to be potentially synced
-declare -a directories=("Resources/public" "Resources/snippet" "Resources/views/storefront")
+declare -a directories=("Resources/app" "Resources/public" "Resources/snippet" "Resources/views/storefront")
 
 log_file="sync_log_$(date '+%Y%m%d').log"
 
