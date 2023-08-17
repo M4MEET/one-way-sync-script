@@ -18,13 +18,14 @@ declare -a directories=(
   "Resources/public"
   "Resources/snippet"
   "Resources/views/storefront"
-  )
+)
 
 log_file="sync_log_$(date '+%Y%m%d').log"
 
 log_message() {
     echo "🚀 $1" | tee -a "$log_file"
 }
+
 
 # Selective Syncing
 selected_directories=()
@@ -104,16 +105,29 @@ backup_zip="$VOLTIMAX_PATH/backup_$(date '+%Y%m%d%H%M%S').zip"
 log_message "🛸 Creating a backup ZIP of Voltimax..."
 
 # Only backup the directories being synced
-zip -r $backup_zip "${selected_directories[@]/#/$VOLTIMAX_PATH/}" || log_message "❌ Failed to create a backup ZIP"
+for dir in "${selected_directories[@]}"; do
+    if [[ -e "$VOLTIMAX_PATH/src/$dir" ]]; then
+        zip -r $backup_zip "$VOLTIMAX_PATH/src/$dir" || log_message "❌ Failed to create a backup ZIP for $dir"
+    else
+        log_message "❌ Path does not exist: $VOLTIMAX_PATH/src/$dir"
+    fi
+done
 
 # Loop through each directory to sync
 for dir in "${selected_directories[@]}"
 do
     log_message "✨ Beaming up $dir..."
-    # Only use rsync once
-    rsync_output=$(rsync -av "$BATTRON_THEME_PATH/src/$dir/" "$VOLTIMAX_PATH/src/$dir/")
-    rsync_status=$?
 
+    # Check if the $dir is a directory or a file before rsyncing
+    if [[ -d "$BATTRON_THEME_PATH/src/$dir" ]]; then
+        # Directory rsync
+        rsync_output=$(rsync -av "$BATTRON_THEME_PATH/src/$dir/" "$VOLTIMAX_PATH/src/$dir/")
+    else
+        # File rsync
+        rsync_output=$(rsync -av "$BATTRON_THEME_PATH/src/$dir" "$VOLTIMAX_PATH/src/$dir")
+    fi
+
+    rsync_status=$?
     copied_files_count=$(echo "$rsync_output" | wc -l)
     copied_files=$((copied_files + copied_files_count))
 
