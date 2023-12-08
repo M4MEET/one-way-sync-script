@@ -33,56 +33,50 @@ log_message() {
     echo -e "${GREEN}🚀 $1${NC}" | tee -a "$log_file"
 }
 
+
 # 🤔 Selective Syncing
 selected_directories=()
 
 echo -e "${YELLOW}🤓 Which directories would you like to sync?${NC}"
+for i in "${!directories[@]}"; do
+    echo "$((i+1))) ${directories[i]}"
+done
 echo -e "(Enter directory numbers separated by spaces for multiple selections, ${GREEN}'a'${NC} for all, or ${RED}'q'${NC} to quit.)"
 
-# 🌍 Add an 'All' option to the directories list for selection.
-all_option="All"
-extended_directories=("${directories[@]}" "$all_option")
+# Ask for user input
+read -p "Enter your choice: " input
 
-select dir in "${extended_directories[@]}"; do
-    case $REPLY in
-        a|A)
-            selected_directories=("${directories[@]}")
-            echo -e "${GREEN}🔥 All directories selected!${NC}"
-            break
-            ;;
-        q|Q)
-            echo -e "${RED}👋 Okay! Maybe next time.${NC}"
-            break
-            ;;
-        *)
-            # Check if the selected number is valid
-            if [[ $REPLY -ge 1 ]] && [[ $REPLY -le ${#extended_directories[@]} ]]; then
-                if [[ "$dir" == "$all_option" ]]; then
-                    selected_directories=("${directories[@]}")
-                    break
-                else
-                    # If this directory was not already selected, add it to the selected directories
-                    if ! [[ "${selected_directories[@]}" =~ "${dir}" ]]; then
-                        selected_directories+=("$dir")
-                    fi
-                fi
-            else
-                echo -e "${RED}🤔 Hmm. Invalid selection. Let's try that again.${NC}"
+# Check if the user wants to quit or select all
+if [[ "$input" == "q" || "$input" == "Q" ]]; then
+    echo -e "${RED}👋 Okay! Maybe next time.${NC}"
+    exit 0
+elif [[ "$input" == "a" || "$input" == "A" ]]; then
+    selected_directories=("${directories[@]}")
+    echo -e "${GREEN}🔥 All directories selected!${NC}"
+else
+    # Split the input into an array
+    IFS=' ' read -r -a selections <<< "$input"
+
+    # Loop through the array and process each selection
+    for selection in "${selections[@]}"; do
+        if [[ $selection -ge 1 ]] && [[ $selection -le ${#directories[@]} ]]; then
+            dir=${directories[$selection-1]}
+            # If this directory was not already selected, add it to the selected directories
+            if ! [[ " ${selected_directories[@]} " =~ " ${dir} " ]]; then
+                selected_directories+=("$dir")
             fi
-            ;;
-    esac
-
-    # 📢 Print a message after a directory is selected
-    if [ -n "$dir" ] && [[ ! "$dir" == "$all_option" ]]; then
-        echo -e "${GREEN}👍 $dir has been selected! Continue selecting, type 'a' for all, or 'q' to wrap up.${NC}"
-    fi
-done
+        else
+            echo -e "${RED}🤔 Hmm. Invalid selection: $selection. Let's try that again.${NC}"
+        fi
+    done
+fi
 
 # ✅ Verification, print out the selected directories.
 echo -e "${GREEN}📝 You've chosen the following directories:${NC}"
 for dir in "${selected_directories[@]}"; do
     echo -e " - $dir"
 done
+
 
 # 📊 Summary initial values
 copied_files=0
