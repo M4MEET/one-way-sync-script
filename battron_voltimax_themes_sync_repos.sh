@@ -84,8 +84,8 @@ copied_files=0
 # 🕵️ Check current branch
 cd "$VOLTIMAX_PATH"
 current_branch=$(git rev-parse --abbrev-ref HEAD)
-if [ "$current_branch" != "master" ]; then
-    log_message "⚠️ You're not on the master branch. Current branch: $current_branch"
+if [ "$current_branch" != "master" ] && [ "$current_branch" != "main" ]; then
+    log_message "⚠️ You're not on the master or main branch. Current branch: $current_branch"
     exit 1
 fi
 
